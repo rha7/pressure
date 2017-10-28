@@ -1,3 +1,10 @@
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+/*
+pressure is a command line tool for load testing
+*/
 package main
 
 import (
@@ -11,9 +18,10 @@ import (
 
 func main() {
 	logger := logrus.New()
+	logger.SetLevel(logrus.InfoLevel)
 	logger.Info("pressure copyright(c) 2017 Gabriel Medina")
 	logger.Info("processing arguments")
-	spec, err := arguments.Process(os.Args[1:], os.Stdin, logger)
+	spec, logLevel, err := arguments.Process(os.Args[1:], os.Stdin, logger)
 	if err != nil {
 		logger.
 			WithField("stage", "arguments_processing").
@@ -22,6 +30,11 @@ func main() {
 		os.Exit(1)
 		return
 	}
+	logger.SetLevel(logLevel)
+	logger.
+		WithField("log_level", logLevel).
+		WithField("spec", spec).
+		Debug("arguments parsed onto spec")
 	logger.Info("performing pressure test")
 	results, err := attacker.Perform(logger, spec)
 	if err != nil {
