@@ -6,7 +6,10 @@ import (
 )
 
 // Perform //
-func Perform(types.Arguments) types.Results {
-	logrus.Info("Processing load test")
-	return types.Results{}
+func Perform(logger *logrus.Logger, spec *types.TestSpec) (types.Results, error) {
+	var results types.Results
+	for i := int64(0); i < spec.ConcurrentThreads; i++ {
+		go processor(logger)
+	}
+	return results, nil
 }

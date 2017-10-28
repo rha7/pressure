@@ -6,6 +6,6 @@ import (
 )
 
 // Text //
-func Text(results types.Results) {
-	logrus.Info("Printing results")
+func Text(logger *logrus.Logger, results types.Results) error {
+	return nil
 }
