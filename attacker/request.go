@@ -36,14 +36,14 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 	req, err := http.NewRequest(spec.Method, spec.URL, bodyReader)
 	if err != nil {
 		return apptypes.Report{
-			ThreadID:     threadID,
-			RequestID:    requestID,
-			Code:         0,
-			Response:     "",
-			Error:        err.Error(),
-			Outcome:      apptypes.OutcomeError,
-			Uncompressed: true,
-			Timings:      timings,
+			ThreadID:   threadID,
+			RequestID:  requestID,
+			Code:       0,
+			Response:   "",
+			Error:      err.Error(),
+			Outcome:    apptypes.OutcomeError,
+			Compressed: false,
+			Timings:    timings,
 		}
 	}
 	for headerKey, headerValue := range spec.RequestHeaders {
@@ -100,15 +100,15 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 	timeStamp := rebaseEvents(&timings)
 	if err != nil {
 		return apptypes.Report{
-			ThreadID:     threadID,
-			RequestID:    requestID,
-			Code:         0,
-			Response:     "",
-			Error:        err.Error(),
-			Outcome:      apptypes.OutcomeError,
-			Uncompressed: resp.Uncompressed,
-			Timings:      timings,
-			Timestamp:    timeStamp,
+			ThreadID:   threadID,
+			RequestID:  requestID,
+			Code:       0,
+			Response:   "",
+			Error:      err.Error(),
+			Outcome:    apptypes.OutcomeError,
+			Compressed: !resp.Uncompressed,
+			Timings:    timings,
+			Timestamp:  timeStamp,
 		}
 	}
 	defer resp.Body.Close()
@@ -117,26 +117,26 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 	rebaseEvents(&timings)
 	if err != nil {
 		return apptypes.Report{
-			ThreadID:     threadID,
-			RequestID:    requestID,
-			Code:         uint64(resp.StatusCode),
-			Response:     string(bodyBytes),
-			Error:        err.Error(),
-			Outcome:      apptypes.OutcomeError,
-			Uncompressed: resp.Uncompressed,
-			Timings:      timings,
-			Timestamp:    timeStamp,
+			ThreadID:   threadID,
+			RequestID:  requestID,
+			Code:       uint64(resp.StatusCode),
+			Response:   string(bodyBytes),
+			Error:      err.Error(),
+			Outcome:    apptypes.OutcomeError,
+			Compressed: !resp.Uncompressed,
+			Timings:    timings,
+			Timestamp:  timeStamp,
 		}
 	}
 	return apptypes.Report{
-		ThreadID:     threadID,
-		RequestID:    requestID,
-		Code:         uint64(resp.StatusCode),
-		Response:     string(bodyBytes),
-		Error:        "",
-		Outcome:      apptypes.OutcomeSuccess,
-		Uncompressed: resp.Uncompressed,
-		Timings:      timings,
-		Timestamp:    timeStamp,
+		ThreadID:   threadID,
+		RequestID:  requestID,
+		Code:       uint64(resp.StatusCode),
+		Response:   string(bodyBytes),
+		Error:      "",
+		Outcome:    apptypes.OutcomeSuccess,
+		Compressed: !resp.Uncompressed,
+		Timings:    timings,
+		Timestamp:  timeStamp,
 	}
 }

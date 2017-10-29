@@ -27,7 +27,7 @@ func main() {
 	logger.Out = os.Stderr
 	logger.SetLevel(logrus.InfoLevel)
 	logger.Info("PRESSURE :: Load Testing Tool for APIs")
-	logger.Info("copyright(c) 2017 Gabriel Medina")
+	logger.Info("Copyright(c) 2017 Gabriel Medina - MIT License")
 	logger.Println()
 	logger.Info("processing arguments")
 	spec, logLevel, err := arguments.Process(os.Args[1:], os.Stdin, logger)
@@ -55,7 +55,7 @@ func main() {
 		return
 	}
 	logger.Info("done.")
-	logger.Println()
+	logger.Printf("\n\n\n")
 	err = printers.Text(logger, spec, results)
 	if err != nil {
 		logger.

@@ -24,7 +24,7 @@ func reportGatherer(
 					WithField("error", report.Error).
 					WithField("outcome", apptypes.OutcomeText(report.Outcome)).
 					WithField("code", report.Code).
-					WithField("uncompressed", report.Uncompressed).
+					WithField("compressed", report.Compressed).
 					WithField("timings", report.Timings).
 					Info("read result")
 			} else {
@@ -34,7 +34,7 @@ func reportGatherer(
 					WithField("error", report.Error).
 					WithField("outcome", apptypes.OutcomeText(report.Outcome)).
 					WithField("code", report.Code).
-					WithField("uncompressed", report.Uncompressed).
+					WithField("compressed", report.Compressed).
 					WithField("total_time", report.Timings[len(report.Timings)-1].TimestampMilliseconds).
 					Info("read result")
 			}

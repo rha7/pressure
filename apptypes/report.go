@@ -45,13 +45,13 @@ func OutcomeText(outcome Outcome) string {
 
 // Report //
 type Report struct {
-	ThreadID     uint64
-	RequestID    uint64
-	Outcome      Outcome
-	Error        string
-	Code         uint64
-	Response     string
-	Uncompressed bool
-	Timings      []TimingEvent
-	Timestamp    time.Time
+	ThreadID   uint64
+	RequestID  uint64
+	Outcome    Outcome
+	Error      string
+	Code       uint64
+	Response   string
+	Compressed bool
+	Timings    []TimingEvent
+	Timestamp  time.Time
 }
