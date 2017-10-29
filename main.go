@@ -8,7 +8,9 @@ pressure is a command line tool for load testing
 package main
 
 import (
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/rha7/pressure/arguments"
 	"github.com/rha7/pressure/attacker"
@@ -16,10 +18,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func main() {
 	logger := logrus.New()
+	logger.Out = os.Stderr
 	logger.SetLevel(logrus.InfoLevel)
-	logger.Info("pressure copyright(c) 2017 Gabriel Medina")
+	logger.Info("PRESSURE :: Load Testing Tool for APIs")
+	logger.Info("copyright(c) 2017 Gabriel Medina")
+	logger.Println()
 	logger.Info("processing arguments")
 	spec, logLevel, err := arguments.Process(os.Args[1:], os.Stdin, logger)
 	if err != nil {
@@ -45,8 +54,9 @@ func main() {
 		os.Exit(2)
 		return
 	}
-	logger.Info("printing results")
-	err = printers.Text(logger, results)
+	logger.Info("done.")
+	logger.Println()
+	err = printers.Text(logger, spec, results)
 	if err != nil {
 		logger.
 			WithField("stage", "output").
@@ -55,5 +65,4 @@ func main() {
 		os.Exit(3)
 		return
 	}
-	logger.Info("done.")
 }

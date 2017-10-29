@@ -1,4 +1,4 @@
-package types
+package apptypes
 
 import (
 	"fmt"
@@ -25,9 +25,9 @@ func (h *Headers) Set(value string) error {
 
 // TestSpec //
 type TestSpec struct {
-	TotalRequests     int64
-	ConcurrentThreads int64
-	RequestTimeout    int64
+	TotalRequests     uint64
+	ConcurrentThreads uint64
+	RequestTimeout    uint64
 	Method            string
 	URL               string
 	RequestHeaders    Headers
