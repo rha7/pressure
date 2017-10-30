@@ -45,7 +45,7 @@ list: .GOPATH/.ok
 	@echo $(allpackages)
 
 cover: bin/gocovmerge .GOPATH/.ok
-	@echo "NOTE: make cover does not exit 1 on failure, don't use it to check for tests success!"
+	@echo "NOTES: make cover does not exit 1 on failure, don't use it to check for tests success!"
 	$Q rm -f .GOPATH/cover/*.out .GOPATH/cover/all.merged
 	$(if $V,@echo "-- go test -coverpkg=./... -coverprofile=.GOPATH/cover/... ./...")
 	@for MOD in $(allpackages); do \

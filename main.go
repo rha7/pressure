@@ -8,6 +8,7 @@ pressure is a command line tool for load testing
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"time"
@@ -29,7 +30,7 @@ func main() {
 	logger.Info("PRESSURE :: Load Testing Tool for APIs")
 	logger.Info("Copyright(c) 2017 Gabriel Medina - MIT License")
 	logger.Println()
-	logger.Info("processing arguments")
+	logger.Info("processing arguments...")
 	spec, logLevel, err := arguments.Process(os.Args[1:], os.Stdin, logger)
 	if err != nil {
 		logger.
@@ -39,6 +40,9 @@ func main() {
 		os.Exit(1)
 		return
 	}
+	logger.Println("arguments processed.")
+	logger.Println()
+	spec.Print(logger)
 	logger.SetLevel(logLevel)
 	logger.
 		WithField("log_level", logLevel).
@@ -56,7 +60,7 @@ func main() {
 	}
 	logger.Info("done.")
 	logger.Printf("\n\n\n")
-	err = printers.Text(logger, spec, results)
+	output, err := printers.Default(logger, results)
 	if err != nil {
 		logger.
 			WithField("stage", "output").
@@ -65,4 +69,5 @@ func main() {
 		os.Exit(3)
 		return
 	}
+	fmt.Println(output)
 }

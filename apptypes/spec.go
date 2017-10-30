@@ -3,6 +3,10 @@ package apptypes
 import (
 	"fmt"
 	"strings"
+
+	yaml "gopkg.in/yaml.v2"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Headers //
@@ -32,4 +36,17 @@ type TestSpec struct {
 	URL               string
 	RequestHeaders    Headers
 	Data              string
+}
+
+// Print //
+func (ts TestSpec) Print(logger *logrus.Logger) error {
+	b, err := yaml.Marshal(ts)
+	if err != nil {
+		return fmt.Errorf("error printing spec: %s", err.Error())
+	}
+	logger.Info("spec:")
+	for _, line := range strings.Split(string(b), "\n") {
+		logger.Info("\t" + line)
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package attacker
 
 import (
 	"sync"
+	"time"
 
 	"github.com/rha7/pressure/apptypes"
 	"github.com/sirupsen/logrus"
@@ -11,7 +12,7 @@ func reportGatherer(
 	chanReportsSink chan apptypes.Report,
 	chanReportsGathererDone chan bool,
 	chanReportsGathererDoneContinue chan bool,
-	reports *[]apptypes.Report,
+	summary *apptypes.Summary,
 	logger *logrus.Logger,
 ) {
 	for {
@@ -38,7 +39,7 @@ func reportGatherer(
 					WithField("total_time", report.Timings[len(report.Timings)-1].TimestampMilliseconds).
 					Info("read result")
 			}
-			(*reports) = append(*reports, report)
+			(*summary).Reports = append((*summary).Reports, report)
 		case <-chanReportsGathererDone:
 			chanReportsGathererDoneContinue <- true
 			return
@@ -47,18 +48,22 @@ func reportGatherer(
 }
 
 // Perform //
-func Perform(logger *logrus.Logger, spec apptypes.TestSpec) ([]apptypes.Report, error) {
-	var results []apptypes.Report
+func Perform(logger *logrus.Logger, spec apptypes.TestSpec) (apptypes.Summary, error) {
 	var chanRequestIDProvider = make(chan uint64, spec.TotalRequests)
 	var chanReportsSink = make(chan apptypes.Report, spec.TotalRequests)
 	var chanReportsGathererDone = make(chan bool, 1)
 	var chanReportsGathererDoneContinue = make(chan bool, 1)
+	summary := apptypes.Summary{
+		Timestamp: time.Now(),
+		Spec:      spec,
+		Reports:   []apptypes.Report{},
+	}
 	waitGroup := &sync.WaitGroup{}
 	go reportGatherer(
 		chanReportsSink,
 		chanReportsGathererDone,
 		chanReportsGathererDoneContinue,
-		&results,
+		&summary,
 		logger,
 	)
 	logger.Info("feeding request id provider")
@@ -74,10 +79,10 @@ func Perform(logger *logrus.Logger, spec apptypes.TestSpec) ([]apptypes.Report, 
 		go processor(threadID, chanRequestIDProvider, chanReportsSink, waitGroup, spec, logger)
 	}
 	waitGroup.Wait()
-	logger.Info("reading results")
+	logger.Info("reading summary")
 	chanReportsGathererDone <- true
 	<-chanReportsGathererDoneContinue
 	close(chanReportsSink)
-	logger.Info("results read completed")
-	return results, nil
+	logger.Info("summary read completed")
+	return summary, nil
 }

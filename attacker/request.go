@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func addEvent(timings *[]apptypes.TimingEvent, name string) {
+func addEvent(timings *[]apptypes.TimingEvent, name apptypes.ReqEvt) {
 	*timings = append(
 		*timings,
 		apptypes.TimingEvent{
@@ -39,7 +39,7 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 			ThreadID:   threadID,
 			RequestID:  requestID,
 			Code:       0,
-			Response:   "",
+			Response:   "ERROR: error creating request",
 			Error:      err.Error(),
 			Outcome:    apptypes.OutcomeError,
 			Compressed: false,
@@ -52,75 +52,73 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 	cli := http.Client{
 		Timeout: time.Duration(spec.RequestTimeout) * time.Second,
 	}
-	addEvent(&timings, "request_started")
+	addEvent(&timings, apptypes.ReqEvtRequestStarted)
 	trace := &httptrace.ClientTrace{
 		GetConn: func(hostPort string) {
-			addEvent(&timings, "get_connection")
+			addEvent(&timings, apptypes.ReqEvtGetConnection)
 		},
 		GotConn: func(httptrace.GotConnInfo) {
-			addEvent(&timings, "got_connection")
+			addEvent(&timings, apptypes.ReqEvtGotConnection)
 		},
 		GotFirstResponseByte: func() {
-			addEvent(&timings, "got_first_response_byte")
+			addEvent(&timings, apptypes.ReqEvtGotFirstResponseByte)
 		},
 		Got100Continue: func() {
-			addEvent(&timings, "got_100_continue")
+			addEvent(&timings, apptypes.ReqEvtGot100Continue)
 		},
 		DNSStart: func(httptrace.DNSStartInfo) {
-			addEvent(&timings, "dns_start")
+			addEvent(&timings, apptypes.ReqEvtDNSStart)
 		},
 		DNSDone: func(httptrace.DNSDoneInfo) {
-			addEvent(&timings, "dns_done")
+			addEvent(&timings, apptypes.ReqEvtDNSDone)
 		},
 		ConnectStart: func(network, addr string) {
-			addEvent(&timings, "connect_start")
+			addEvent(&timings, apptypes.ReqEvtConnectStart)
 		},
 		ConnectDone: func(network, addr string, err error) {
-			addEvent(&timings, "connect_done")
+			addEvent(&timings, apptypes.ReqEvtConnectDone)
 		},
 		TLSHandshakeStart: func() {
-			addEvent(&timings, "tls_handshake_start")
+			addEvent(&timings, apptypes.ReqEvtTLSHandshakeStart)
 		},
 		TLSHandshakeDone: func(tls.ConnectionState, error) {
-			addEvent(&timings, "tls_handshake_done")
+			addEvent(&timings, apptypes.ReqEvtTLSHandshakeDone)
 		},
 		WroteHeaders: func() {
-			addEvent(&timings, "wrote_headers")
+			addEvent(&timings, apptypes.ReqEvtWroteHeaders)
 		},
 		Wait100Continue: func() {
-			addEvent(&timings, "wait_100_continue")
+			addEvent(&timings, apptypes.ReqEvtWait100Continue)
 		},
 		WroteRequest: func(httptrace.WroteRequestInfo) {
-			addEvent(&timings, "wrote_request")
+			addEvent(&timings, apptypes.ReqEvtWroteRequest)
 		},
 	}
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	resp, err := cli.Do(req)
-	addEvent(&timings, "request_completed")
+	addEvent(&timings, apptypes.ReqEvtRequestCompleted)
 	timeStamp := rebaseEvents(&timings)
 	if err != nil {
 		return apptypes.Report{
 			ThreadID:   threadID,
 			RequestID:  requestID,
 			Code:       0,
-			Response:   "",
+			Response:   "ERROR: error executing request",
 			Error:      err.Error(),
 			Outcome:    apptypes.OutcomeError,
-			Compressed: !resp.Uncompressed,
+			Compressed: false,
 			Timings:    timings,
 			Timestamp:  timeStamp,
 		}
 	}
 	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	addEvent(&timings, "got_last_response_byte")
-	rebaseEvents(&timings)
 	if err != nil {
 		return apptypes.Report{
 			ThreadID:   threadID,
 			RequestID:  requestID,
 			Code:       uint64(resp.StatusCode),
-			Response:   string(bodyBytes),
+			Response:   "ERROR: error reading response body",
 			Error:      err.Error(),
 			Outcome:    apptypes.OutcomeError,
 			Compressed: !resp.Uncompressed,
@@ -128,6 +126,8 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 			Timestamp:  timeStamp,
 		}
 	}
+	addEvent(&timings, apptypes.ReqEvtGotLastResponseByte)
+	rebaseEvents(&timings)
 	return apptypes.Report{
 		ThreadID:   threadID,
 		RequestID:  requestID,
