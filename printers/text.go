@@ -3,9 +3,10 @@ package printers
 import (
 	"bytes"
 	"fmt"
-	"html/template"
+	"text/template"
 	"time"
 
+	humanize "github.com/dustin/go-humanize"
 	"github.com/rha7/pressure/apptypes"
 	"github.com/sirupsen/logrus"
 )
@@ -14,14 +15,14 @@ const textSummaryTemplate = `
 Load Test Started At: {{.Timestamp}}
 
 Summary:
-  Requests Count: {{.Summary.Count | printf "%11d"}}
-          Errors: {{.Summary.Errors | printf "%11d"}}
-      Errors (%): {{.Summary.ErrorsPercent | printf "%11.3f"}}%
-      Total Time: {{.Summary.Total | printf "%11.3f"}} ms
-         Slowest: {{.Summary.Slowest | printf "%11.3f"}} ms
-         Fastest: {{.Summary.Fastest | printf "%11.3f"}} ms
-         Average: {{.Summary.Average | printf "%11.3f"}} ms
-    Requests/sec: {{.Summary.RequestsPerSec | printf "%11.3f"}}
+  Requests Count: {{.Summary.Count | format_stat_uint64}}
+          Errors: {{.Summary.Errors | format_stat_uint64}}
+      Errors (%): {{.Summary.ErrorsPercent | format_stat_float}} %
+      Total Time: {{.Summary.Total | format_stat_float}} ms
+         Slowest: {{.Summary.Slowest | format_stat_float}} ms
+         Fastest: {{.Summary.Fastest | format_stat_float}} ms
+         Average: {{.Summary.Average | format_stat_float}} ms
+    Requests/sec: {{.Summary.RequestsPerSec | format_stat_float}}
 
 Return HTTP Status Codes Distribution:
 {{range $code, $count := .CodeDistribution}}
@@ -58,17 +59,12 @@ func Text(logger *logrus.Logger, summary apptypes.Summary) (string, error) {
 		CodeDistribution: make(map[uint64]uint64),
 	}
 
-	responseTimeOfFirst := summary.
-		Reports[0].
-		Timings[len(summary.Reports[0].Timings)-1].
-		TimestampMilliseconds
+	responseTimeOfFirst := float64(summary.Reports[0].DurationMilliseconds)
 	data.Summary.Count = uint64(len(summary.Reports))
 	data.Summary.Slowest = responseTimeOfFirst
 	data.Summary.Fastest = responseTimeOfFirst
 	for _, report := range summary.Reports {
-		reportResponseTime := report.
-			Timings[len(report.Timings)-1].
-			TimestampMilliseconds
+		reportResponseTime := float64(report.DurationMilliseconds)
 		if reportResponseTime > data.Summary.Slowest {
 			data.Summary.Slowest = reportResponseTime
 		}
@@ -85,9 +81,18 @@ func Text(logger *logrus.Logger, summary apptypes.Summary) (string, error) {
 	data.Summary.RequestsPerSec = float64(data.Summary.Count) / (data.Summary.Total / float64(1000.0))
 	data.Summary.ErrorsPercent = float64(100*data.Summary.Errors) / float64(data.Summary.Count)
 
+	funcMap := template.FuncMap{
+		"format_stat_float": func(v float64) string {
+			return fmt.Sprintf("%20s", humanize.FormatFloat("#,###.###", v))
+		},
+		"format_stat_uint64": func(v uint64) string {
+			return fmt.Sprintf("%20s", humanize.Comma(int64(v)))
+		},
+	}
+
 	// Proceed to printing
 	b := bytes.NewBufferString("")
-	t := template.Must(template.New("text_summary").Parse(textSummaryTemplate))
+	t := template.Must(template.New("text_summary").Funcs(funcMap).Parse(textSummaryTemplate))
 	err := t.Execute(b, data)
 	if err != nil {
 		return "", fmt.Errorf("error occurred while printing text: %s", err.Error())

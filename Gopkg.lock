@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  revision = "77ed807830b4df581417e7f89eb81d4872832b72"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
@@ -28,6 +34,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fa9adef9ffe8f0c8c3e77900ac83af1d96c1c5fff913820de1eaaea1ac09004b"
+  inputs-digest = "78b9eec1eaa69758cecf6f3fefb2e7bfd1625ee6c65ee4d66714bd9a0c61e711"
   solver-name = "gps-cdcl"
   solver-version = 1

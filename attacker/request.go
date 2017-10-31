@@ -30,6 +30,10 @@ func rebaseEvents(timings *[]apptypes.TimingEvent) time.Time {
 	return time.Unix(0, int64(t0))
 }
 
+func getRequestDuration(timeStamp time.Time) float64 {
+	return float64(uint64(time.Now().UnixNano()-timeStamp.UnixNano())) / float64(1000000.0)
+}
+
 func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *logrus.Logger) apptypes.Report {
 	timings := []apptypes.TimingEvent{}
 	bodyReader := bytes.NewBufferString(spec.Data)
@@ -96,47 +100,52 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 	}
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	resp, err := cli.Do(req)
-	addEvent(&timings, apptypes.ReqEvtRequestCompleted)
-	timeStamp := rebaseEvents(&timings)
 	if err != nil {
+		addEvent(&timings, apptypes.ReqEvtRequestErrorOcurred)
+		timeStamp := rebaseEvents(&timings)
 		return apptypes.Report{
-			ThreadID:   threadID,
-			RequestID:  requestID,
-			Code:       0,
-			Response:   "ERROR: error executing request",
-			Error:      err.Error(),
-			Outcome:    apptypes.OutcomeError,
-			Compressed: false,
-			Timings:    timings,
-			Timestamp:  timeStamp,
+			ThreadID:             threadID,
+			RequestID:            requestID,
+			Code:                 0,
+			Response:             "ERROR: error executing request",
+			Error:                err.Error(),
+			Outcome:              apptypes.OutcomeError,
+			Compressed:           false,
+			Timings:              timings,
+			Timestamp:            timeStamp,
+			DurationMilliseconds: getRequestDuration(timeStamp),
 		}
 	}
 	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		addEvent(&timings, apptypes.ReqEvtResponseErrorOcurred)
+		timeStamp := rebaseEvents(&timings)
 		return apptypes.Report{
-			ThreadID:   threadID,
-			RequestID:  requestID,
-			Code:       uint64(resp.StatusCode),
-			Response:   "ERROR: error reading response body",
-			Error:      err.Error(),
-			Outcome:    apptypes.OutcomeError,
-			Compressed: !resp.Uncompressed,
-			Timings:    timings,
-			Timestamp:  timeStamp,
+			ThreadID:             threadID,
+			RequestID:            requestID,
+			Code:                 uint64(resp.StatusCode),
+			Response:             "ERROR: error reading response body",
+			Error:                err.Error(),
+			Outcome:              apptypes.OutcomeError,
+			Compressed:           !resp.Uncompressed,
+			Timings:              timings,
+			Timestamp:            timeStamp,
+			DurationMilliseconds: getRequestDuration(timeStamp),
 		}
 	}
 	addEvent(&timings, apptypes.ReqEvtGotLastResponseByte)
-	rebaseEvents(&timings)
+	timeStamp := rebaseEvents(&timings)
 	return apptypes.Report{
-		ThreadID:   threadID,
-		RequestID:  requestID,
-		Code:       uint64(resp.StatusCode),
-		Response:   string(bodyBytes),
-		Error:      "",
-		Outcome:    apptypes.OutcomeSuccess,
-		Compressed: !resp.Uncompressed,
-		Timings:    timings,
-		Timestamp:  timeStamp,
+		ThreadID:             threadID,
+		RequestID:            requestID,
+		Code:                 uint64(resp.StatusCode),
+		Response:             string(bodyBytes),
+		Error:                "",
+		Outcome:              apptypes.OutcomeSuccess,
+		Compressed:           !resp.Uncompressed,
+		Timings:              timings,
+		Timestamp:            timeStamp,
+		DurationMilliseconds: getRequestDuration(timeStamp),
 	}
 }

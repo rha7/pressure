@@ -8,45 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func reportGatherer(
-	chanReportsSink chan apptypes.Report,
-	chanReportsGathererDone chan bool,
-	chanReportsGathererDoneContinue chan bool,
-	summary *apptypes.Summary,
-	logger *logrus.Logger,
-) {
-	for {
-		select {
-		case report := <-chanReportsSink:
-			if logger.Level == logrus.DebugLevel {
-				logger.
-					WithField("thread_id", report.ThreadID).
-					WithField("request_id", report.RequestID).
-					WithField("error", report.Error).
-					WithField("outcome", apptypes.OutcomeText(report.Outcome)).
-					WithField("code", report.Code).
-					WithField("compressed", report.Compressed).
-					WithField("timings", report.Timings).
-					Info("read result")
-			} else {
-				logger.
-					WithField("thread_id", report.ThreadID).
-					WithField("request_id", report.RequestID).
-					WithField("error", report.Error).
-					WithField("outcome", apptypes.OutcomeText(report.Outcome)).
-					WithField("code", report.Code).
-					WithField("compressed", report.Compressed).
-					WithField("total_time", report.Timings[len(report.Timings)-1].TimestampMilliseconds).
-					Info("read result")
-			}
-			(*summary).Reports = append((*summary).Reports, report)
-		case <-chanReportsGathererDone:
-			chanReportsGathererDoneContinue <- true
-			return
-		}
-	}
-}
-
 // Perform //
 func Perform(logger *logrus.Logger, spec apptypes.TestSpec) (apptypes.Summary, error) {
 	var chanRequestIDProvider = make(chan uint64, spec.TotalRequests)
