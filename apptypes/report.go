@@ -57,11 +57,30 @@ type Report struct {
 	DurationMilliseconds float64       `yaml:"duration_ms"`
 }
 
+// SummaryStatsAggregations //
+type SummaryStatsAggregations struct {
+	Count          uint64
+	Errors         uint64
+	ErrorsPercent  float64
+	Total          float64
+	Slowest        float64
+	Fastest        float64
+	Average        float64
+	RequestsPerSec float64
+}
+
+// SummaryStats //
+type SummaryStats struct {
+	Aggregations               SummaryStatsAggregations
+	HTTPStatusCodeDistribution map[uint64]uint64
+}
+
 // Summary //
 type Summary struct {
-	Timestamp time.Time `yaml:"timestamp"`
-	Spec      TestSpec  `yaml:"test_spec"`
-	Reports   []Report  `yaml:"reports"`
+	Timestamp time.Time    `yaml:"timestamp"`
+	Spec      TestSpec     `yaml:"test_spec"`
+	Reports   []Report     `yaml:"reports"`
+	Stats     SummaryStats `yaml:"stats"`
 }
 
 // ReqEvt is Request events type //

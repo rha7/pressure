@@ -45,5 +45,6 @@ func Perform(logger *logrus.Logger, spec apptypes.TestSpec) (apptypes.Summary, e
 	<-chanReportsGathererDoneContinue
 	close(chanReportsSink)
 	logger.Info("summary read completed")
+	enrichSummary(&summary)
 	return summary, nil
 }
