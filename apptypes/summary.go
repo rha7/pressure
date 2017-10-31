@@ -16,9 +16,9 @@ type Outcome uint64
 
 // TimingEvent //
 type TimingEvent struct {
-	Name                  ReqEvt  `yaml:"name"`
-	UnixNanoTimestamp     uint64  `yaml:"unix_nano_timestamp"`
-	TimestampMilliseconds float64 `yaml:"timestamp_milliseconds"`
+	Name                  ReqEvt
+	UnixNanoTimestamp     uint64
+	TimestampMilliseconds float64
 }
 
 func (te TimingEvent) String() string {
@@ -45,16 +45,16 @@ func OutcomeText(outcome Outcome) string {
 
 // Report //
 type Report struct {
-	ThreadID             uint64        `yaml:"thread_id"`
-	RequestID            uint64        `yaml:"request_id"`
-	Outcome              Outcome       `yaml:"outcome"`
-	Error                string        `yaml:"error"`
-	Code                 uint64        `yaml:"code"`
-	Response             string        `yaml:"response"`
-	Compressed           bool          `yaml:"compressed"`
-	Timings              []TimingEvent `yaml:"timings"`
-	Timestamp            time.Time     `yaml:"timestamp"`
-	DurationMilliseconds float64       `yaml:"duration_ms"`
+	ThreadID             uint64
+	RequestID            uint64
+	Outcome              Outcome
+	Error                string
+	Code                 uint64
+	Response             string
+	Compressed           bool
+	Timings              []TimingEvent
+	Timestamp            time.Time
+	DurationMilliseconds float64
 }
 
 // SummaryStatsAggregations //
@@ -69,18 +69,26 @@ type SummaryStatsAggregations struct {
 	RequestsPerSec float64
 }
 
+// SummaryStatsResponseTimesDistributionSlot //
+type SummaryStatsResponseTimesDistributionSlot struct {
+	From  float64
+	UpTo  float64
+	Count uint64
+}
+
 // SummaryStats //
 type SummaryStats struct {
 	Aggregations               SummaryStatsAggregations
 	HTTPStatusCodeDistribution map[uint64]uint64
+	ResponseTimesDistribution  []SummaryStatsResponseTimesDistributionSlot
 }
 
 // Summary //
 type Summary struct {
-	Timestamp time.Time    `yaml:"timestamp"`
-	Spec      TestSpec     `yaml:"test_spec"`
-	Reports   []Report     `yaml:"reports"`
-	Stats     SummaryStats `yaml:"stats"`
+	Timestamp time.Time
+	Spec      TestSpec
+	Reports   []Report
+	Stats     SummaryStats
 }
 
 // ReqEvt is Request events type //

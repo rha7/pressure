@@ -39,7 +39,7 @@ func Process(inputArgs []string, bodySource io.Reader, logger *logrus.Logger) (a
 	}
 	flagSet := flag.NewFlagSet("pressure", flag.ExitOnError)
 	flagSet.StringVar(&logLevelString, "l", "info", "logging level")
-	flagSet.Uint64Var(&spec.TotalRequests, "n", 100, "total number of requests")
+	flagSet.Uint64Var(&spec.TotalRequests, "n", 100, "total number of requests (mininum 10)")
 	flagSet.Uint64Var(&spec.ConcurrentThreads, "c", 10, "concurrent requests")
 	flagSet.Uint64Var(&spec.RequestTimeout, "t", 30, "requests timeout")
 	flagSet.StringVar(&spec.Data, "d", "", "data to be sent as body in request")
@@ -68,6 +68,9 @@ func Process(inputArgs []string, bodySource io.Reader, logger *logrus.Logger) (a
 	}
 	if flagSet.NArg() != 1 {
 		return spec, logLevel, fmt.Errorf("one and only one URL argument must be specified")
+	}
+	if spec.TotalRequests <= 1 {
+		return spec, logLevel, fmt.Errorf("total number of requets must be greater than 1")
 	}
 	spec.URL = strings.TrimSpace(flagSet.Arg(0))
 	spec.Method = strings.TrimSpace(strings.ToUpper(spec.Method))
