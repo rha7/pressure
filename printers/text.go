@@ -32,6 +32,28 @@ Response Times Distribution (count for greater than or equal to each slot):
 {{range $code, $slot := .Stats.ResponseTimesDistribution -}}
     {{$slot.From | format_stat_float}} : {{$slot.Count | format_stat_uint64_left}} : {{$slot.Count | histogram}}
 {{end}}
+
+Latency Distribution:
+    10% in {{.Stats.ResponseTimesPercentiles.Percentile10 | format_stat_float}} ms
+    25% in {{.Stats.ResponseTimesPercentiles.Percentile25 | format_stat_float}} ms
+    50% in {{.Stats.ResponseTimesPercentiles.Percentile50 | format_stat_float}} ms
+    75% in {{.Stats.ResponseTimesPercentiles.Percentile75 | format_stat_float}} ms
+    90% in {{.Stats.ResponseTimesPercentiles.Percentile90 | format_stat_float}} ms
+    95% in {{.Stats.ResponseTimesPercentiles.Percentile95 | format_stat_float}} ms
+    99% in {{.Stats.ResponseTimesPercentiles.Percentile99 | format_stat_float}} ms
+
+Request/Response Events Details:
+{{$evtaggs := .Stats.EventsAggregations -}}
+{{"                                                 Slowest                 Average                 Fastest"}}
+{{"                                  ======================================================================"}}
+{{range $event := event_list -}}
+{{with index $evtaggs $event -}}
+{{$event | event_labels | printf "%30s"}} : {{.Slowest | format_stat_float}} ms {{.Average | format_stat_float}} ms {{.Fastest | format_stat_float}} ms
+{{else -}}
+{{$event | event_labels | printf "%30s"}} :                    - ms                    - ms                    - ms
+{{end -}}
+{{end}}
+
 `
 
 // Text //
@@ -60,6 +82,8 @@ func Text(logger *logrus.Logger, summary apptypes.Summary) (string, error) {
 			}
 			return s
 		},
+		"event_list":   apptypes.ReqEvtList,
+		"event_labels": apptypes.ReqEvtLabels,
 	}
 
 	// Proceed to printing

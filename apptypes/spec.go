@@ -29,13 +29,13 @@ func (h *Headers) Set(value string) error {
 
 // TestSpec //
 type TestSpec struct {
-	TotalRequests     uint64
-	ConcurrentThreads uint64
-	RequestTimeout    uint64
-	Method            string
-	URL               string
-	RequestHeaders    Headers
-	Data              string
+	TotalRequests     uint64  `yaml:"total_requests"`
+	ConcurrentThreads uint64  `yaml:"concurrent_threads"`
+	RequestTimeout    uint64  `yaml:"request_timeout"`
+	Method            string  `yaml:"method"`
+	URL               string  `yaml:"url"`
+	RequestHeaders    Headers `yaml:"request_headers"`
+	Data              string  `yaml:"data"`
 }
 
 // Print //

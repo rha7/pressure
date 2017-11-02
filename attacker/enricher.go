@@ -1,9 +1,11 @@
 package attacker
 
-import "github.com/rha7/pressure/apptypes"
+import (
+	"math"
+	"sort"
 
-// TODO: Add Response time histogram (Ten slices between slowest and fastest, with count of each)
-// TODO: Latency distribution (response time percentils, 10, 25, 50, 75, 90, 95, and 99)
+	"github.com/rha7/pressure/apptypes"
+)
 
 func calculateHTTPStatusCodeDistribution(summary *apptypes.Summary) {
 	summary.Stats.HTTPStatusCodeDistribution = make(map[uint64]uint64)
@@ -59,8 +61,56 @@ func calculateResponseTimeDistribution(summary *apptypes.Summary) {
 	}
 }
 
+func calculateResponseTimePercentils(summary *apptypes.Summary) {
+	reportCount := len(summary.Reports)
+	durations := make([]float64, 0, reportCount)
+	for _, report := range summary.Reports {
+		durations = append(durations, report.DurationMilliseconds)
+	}
+	sort.Float64s(durations)
+	summary.Stats.ResponseTimesPercentiles.Percentile10 = durations[int(float64(reportCount)*float64(0.10))]
+	summary.Stats.ResponseTimesPercentiles.Percentile25 = durations[int(float64(reportCount)*float64(0.25))]
+	summary.Stats.ResponseTimesPercentiles.Percentile50 = durations[int(float64(reportCount)*float64(0.50))]
+	summary.Stats.ResponseTimesPercentiles.Percentile75 = durations[int(float64(reportCount)*float64(0.75))]
+	summary.Stats.ResponseTimesPercentiles.Percentile90 = durations[int(float64(reportCount)*float64(0.90))]
+	summary.Stats.ResponseTimesPercentiles.Percentile95 = durations[int(float64(reportCount)*float64(0.95))]
+	summary.Stats.ResponseTimesPercentiles.Percentile99 = durations[int(float64(reportCount)*float64(0.99))]
+}
+
+func calculateEventsAggregations(summary *apptypes.Summary) {
+	availableEvents := make(map[apptypes.ReqEvt]bool)
+	summary.Stats.EventsAggregations = make(map[apptypes.ReqEvt]*apptypes.SummaryEventsAggregationsDetail)
+	for _, report := range summary.Reports {
+		for _, timing := range report.Timings {
+			availableEvents[timing.Name] = true
+			if summary.Stats.EventsAggregations[timing.Name] == nil {
+				summary.Stats.EventsAggregations[timing.Name] =
+					&apptypes.SummaryEventsAggregationsDetail{
+						Slowest: 0.0,
+						Average: 0.0,
+						Fastest: math.MaxFloat64,
+					}
+			}
+			if summary.Stats.EventsAggregations[timing.Name].Slowest < timing.TimestampMilliseconds {
+				summary.Stats.EventsAggregations[timing.Name].Slowest = timing.TimestampMilliseconds
+			}
+			if summary.Stats.EventsAggregations[timing.Name].Fastest > timing.TimestampMilliseconds {
+				summary.Stats.EventsAggregations[timing.Name].Fastest = timing.TimestampMilliseconds
+			}
+			summary.Stats.EventsAggregations[timing.Name].Average += timing.TimestampMilliseconds
+		}
+	}
+	for reqEvt := range availableEvents {
+		summary.Stats.EventsAggregations[reqEvt].Average =
+			summary.Stats.EventsAggregations[reqEvt].Average /
+				float64(len(summary.Reports))
+	}
+}
+
 func enrichSummary(summary *apptypes.Summary) {
 	calculateAggregations(summary)
 	calculateHTTPStatusCodeDistribution(summary)
 	calculateResponseTimeDistribution(summary)
+	calculateResponseTimePercentils(summary)
+	calculateEventsAggregations(summary)
 }

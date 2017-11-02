@@ -69,8 +69,8 @@ func Process(inputArgs []string, bodySource io.Reader, logger *logrus.Logger) (a
 	if flagSet.NArg() != 1 {
 		return spec, logLevel, fmt.Errorf("one and only one URL argument must be specified")
 	}
-	if spec.TotalRequests <= 1 {
-		return spec, logLevel, fmt.Errorf("total number of requets must be greater than 1")
+	if spec.TotalRequests <= 2 {
+		return spec, logLevel, fmt.Errorf("total number of requets must be at least 3")
 	}
 	spec.URL = strings.TrimSpace(flagSet.Arg(0))
 	spec.Method = strings.TrimSpace(strings.ToUpper(spec.Method))

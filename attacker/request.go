@@ -6,13 +6,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"regexp"
 	"time"
 
 	"github.com/rha7/pressure/apptypes"
 	"github.com/sirupsen/logrus"
 )
 
-func addEvent(timings *[]apptypes.TimingEvent, name apptypes.ReqEvt) {
+func addEvent(logger *logrus.Logger, threadID uint64, requestID uint64, timings *[]apptypes.TimingEvent, name apptypes.ReqEvt) {
+	logger.
+		WithField("thread_id", threadID).
+		WithField("request_id", requestID).
+		WithField("event_name", name).
+		Debug("event received")
 	*timings = append(
 		*timings,
 		apptypes.TimingEvent{
@@ -50,58 +56,64 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 			Timings:    timings,
 		}
 	}
+	rxHdr := regexp.MustCompile("(?i)host")
 	for headerKey, headerValue := range spec.RequestHeaders {
+		if rxHdr.MatchString(headerKey) {
+			req.Host = headerValue
+			logger.WithField("host", headerValue).Info("setting request host")
+			continue
+		}
 		req.Header.Add(headerKey, headerValue)
 	}
 	cli := http.Client{
 		Timeout: time.Duration(spec.RequestTimeout) * time.Second,
 	}
-	addEvent(&timings, apptypes.ReqEvtRequestStarted)
+	// addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtRequestStarted)
 	trace := &httptrace.ClientTrace{
 		GetConn: func(hostPort string) {
-			addEvent(&timings, apptypes.ReqEvtGetConnection)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGetConnection)
 		},
 		GotConn: func(httptrace.GotConnInfo) {
-			addEvent(&timings, apptypes.ReqEvtGotConnection)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGotConnection)
 		},
 		GotFirstResponseByte: func() {
-			addEvent(&timings, apptypes.ReqEvtGotFirstResponseByte)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGotFirstResponseByte)
 		},
 		Got100Continue: func() {
-			addEvent(&timings, apptypes.ReqEvtGot100Continue)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGot100Continue)
 		},
 		DNSStart: func(httptrace.DNSStartInfo) {
-			addEvent(&timings, apptypes.ReqEvtDNSStart)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtDNSStart)
 		},
 		DNSDone: func(httptrace.DNSDoneInfo) {
-			addEvent(&timings, apptypes.ReqEvtDNSDone)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtDNSDone)
 		},
 		ConnectStart: func(network, addr string) {
-			addEvent(&timings, apptypes.ReqEvtConnectStart)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtConnectStart)
 		},
 		ConnectDone: func(network, addr string, err error) {
-			addEvent(&timings, apptypes.ReqEvtConnectDone)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtConnectDone)
 		},
 		TLSHandshakeStart: func() {
-			addEvent(&timings, apptypes.ReqEvtTLSHandshakeStart)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtTLSHandshakeStart)
 		},
 		TLSHandshakeDone: func(tls.ConnectionState, error) {
-			addEvent(&timings, apptypes.ReqEvtTLSHandshakeDone)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtTLSHandshakeDone)
 		},
 		WroteHeaders: func() {
-			addEvent(&timings, apptypes.ReqEvtWroteHeaders)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtWroteHeaders)
 		},
 		Wait100Continue: func() {
-			addEvent(&timings, apptypes.ReqEvtWait100Continue)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtWait100Continue)
 		},
 		WroteRequest: func(httptrace.WroteRequestInfo) {
-			addEvent(&timings, apptypes.ReqEvtWroteRequest)
+			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtWroteRequest)
 		},
 	}
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	resp, err := cli.Do(req)
 	if err != nil {
-		addEvent(&timings, apptypes.ReqEvtRequestErrorOcurred)
+		addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtRequestErrorOccurred)
 		timeStamp := rebaseEvents(&timings)
 		return apptypes.Report{
 			ThreadID:             threadID,
@@ -119,7 +131,7 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		addEvent(&timings, apptypes.ReqEvtResponseErrorOcurred)
+		addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtResponseErrorOccurred)
 		timeStamp := rebaseEvents(&timings)
 		return apptypes.Report{
 			ThreadID:             threadID,
@@ -134,7 +146,7 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 			DurationMilliseconds: getRequestDuration(timeStamp),
 		}
 	}
-	addEvent(&timings, apptypes.ReqEvtGotLastResponseByte)
+	addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGotLastResponseByte)
 	timeStamp := rebaseEvents(&timings)
 	return apptypes.Report{
 		ThreadID:             threadID,
