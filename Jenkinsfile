@@ -22,7 +22,7 @@ pipeline {
     }
     stage('s3') {
       steps {
-        mail(subject: 'Lala', body: 'Lolo')
+        mail(subject: 'Lala', body: 'Lolo', to: 'gmedina@ooyala.com')
       }
     }
   }
