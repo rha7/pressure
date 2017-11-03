@@ -33,7 +33,7 @@ func main() {
 	logger.Info("Copyright(c) 2017 Gabriel Medina - MIT License")
 	logger.Println()
 	logger.Info("processing arguments...")
-	spec, logLevel, err := arguments.Process(os.Args[1:], os.Stdin, logger)
+	spec, logLevel, err := arguments.Process(os.Args[1:], os.Stdin, logger, os.Stderr)
 	if err != nil {
 		logger.
 			WithField("stage", "arguments_processing").

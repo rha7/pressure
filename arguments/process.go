@@ -32,12 +32,13 @@ func validMethod(method string) bool {
 }
 
 // Process //
-func Process(inputArgs []string, bodySource io.Reader, logger *logrus.Logger) (apptypes.TestSpec, logrus.Level, error) {
+func Process(inputArgs []string, bodySource io.Reader, logger *logrus.Logger, output io.Writer) (apptypes.TestSpec, logrus.Level, error) {
 	var logLevelString string
 	spec := apptypes.TestSpec{
 		RequestHeaders: make(apptypes.Headers),
 	}
-	flagSet := flag.NewFlagSet("pressure", flag.ExitOnError)
+	flagSet := flag.NewFlagSet("pressure", flag.ContinueOnError)
+	flagSet.SetOutput(output)
 	flagSet.StringVar(&logLevelString, "l", "info", "logging level")
 	flagSet.Uint64Var(&spec.TotalRequests, "n", 100, "total number of requests (mininum 10)")
 	flagSet.Uint64Var(&spec.ConcurrentThreads, "c", 10, "concurrent requests")
@@ -70,7 +71,7 @@ func Process(inputArgs []string, bodySource io.Reader, logger *logrus.Logger) (a
 		return spec, logLevel, fmt.Errorf("one and only one URL argument must be specified")
 	}
 	if spec.TotalRequests <= 2 {
-		return spec, logLevel, fmt.Errorf("total number of requets must be at least 3")
+		return spec, logLevel, fmt.Errorf("total number of requests must be at least 3")
 	}
 	spec.URL = strings.TrimSpace(flagSet.Arg(0))
 	spec.Method = strings.TrimSpace(strings.ToUpper(spec.Method))

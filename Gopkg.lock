@@ -8,10 +8,34 @@
   revision = "77ed807830b4df581417e7f89eb81d4872832b72"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/gopherjs/gopherjs"
+  packages = ["js"]
+  revision = "444abdf920945de5d4a977b572bcc6c674d1e4eb"
+
+[[projects]]
+  name = "github.com/jtolds/gls"
+  packages = ["."]
+  revision = "77f18212c9c7edc9bd6a33d383a7b545ce62f064"
+  version = "v4.2.1"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
   version = "v1.0.3"
+
+[[projects]]
+  name = "github.com/smartystreets/assertions"
+  packages = [".","internal/go-render/render","internal/oglematchers"]
+  revision = "ff1918e1e5a13a74014644ae7c1e0ba2f791364d"
+  version = "1.8.0"
+
+[[projects]]
+  name = "github.com/smartystreets/goconvey"
+  packages = ["convey","convey/gotest","convey/reporting"]
+  revision = "9e8dc3f972df6c8fcc0375ef492c24d0bb204857"
+  version = "1.6.3"
 
 [[projects]]
   branch = "master"
@@ -34,6 +58,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "78b9eec1eaa69758cecf6f3fefb2e7bfd1625ee6c65ee4d66714bd9a0c61e711"
+  inputs-digest = "2236723b79d8ffaed595924cb74ae39d2307d8fd9e818c442cee053fa6ac2cee"
   solver-name = "gps-cdcl"
   solver-version = 1

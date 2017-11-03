@@ -13,7 +13,7 @@ import (
 type Headers map[string]string
 
 func (h *Headers) String() string {
-	return fmt.Sprint(*h)
+	return fmt.Sprintf("%#v", *h)
 }
 
 // Set //
