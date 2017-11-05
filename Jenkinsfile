@@ -1,6 +1,6 @@
 pipeline {
-    agent any
-    stages {
+  agent any
+  stages {
     stage('Run Tests') {
       steps {
         sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test'
@@ -23,6 +23,7 @@ pipeline {
         archiveArtifacts 'bin/darwin_amd64/pressure'
         archiveArtifacts 'bin/pressure'
         archiveArtifacts 'bin/windows_amd64/pressure.exe'
+        archiveArtifacts 'report.xml'
       }
     }
   }
