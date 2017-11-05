@@ -33,5 +33,6 @@ pipeline {
   }
   environment {
     GOROOT = '/opt/go1.8.3'
+    PATH = '/opt/go1.8.3/bin:$PATH'
   }
 }
