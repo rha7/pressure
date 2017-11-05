@@ -8,7 +8,7 @@ pipeline {
     }
     stage('Build Test Report') {
       steps {
-        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test-verbose' 2>&1 | go-junit-report > report.xml
+        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test-verbose 2>&1 | go-junit-report > report.xml'
       }
     }
     stage('Build') {
