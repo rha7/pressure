@@ -10,17 +10,17 @@ pipeline {
       parallel {
         stage('Build for Linux') {
           steps {
-            sh 'GOOS=linux GOARCH=amd64 make'
+            sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" GOOS=linux GOARCH=amd64 make'
           }
         }
         stage('Build for Mac OS X') {
           steps {
-            sh 'GOOS=darwin GOARCH=amd64 make'
+            sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" GOOS=darwin GOARCH=amd64 make'
           }
         }
         stage('Build for Windows ') {
           steps {
-            sh 'GOOS=windows GOARCH=amd64 make'
+            sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" GOOS=windows GOARCH=amd64 make'
           }
         }
       }
