@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Test') {
       steps {
-        sh 'GOROOT="/opt/go" PATH="/opt/go:$PATH" make test'
+        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test'
       }
     }
     stage('Build for Linux') {
