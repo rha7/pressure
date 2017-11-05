@@ -23,14 +23,14 @@ pipeline {
         '''
       }
     }
-    post {
-      always {
-        archiveArtifacts 'bin/pressure_linux_amd64'
-        archiveArtifacts 'bin/pressure_darwin_amd64'
-        archiveArtifacts 'bin/pressure_windows_amd64.exe'
-        archiveArtifacts 'report.xml'
-        junit 'report.xml'
-      }
+  }
+  post {
+    always {
+      archiveArtifacts 'bin/pressure_linux_amd64'
+      archiveArtifacts 'bin/pressure_darwin_amd64'
+      archiveArtifacts 'bin/pressure_windows_amd64.exe'
+      archiveArtifacts 'report.xml'
+      junit 'report.xml'
     }
   }
 }
