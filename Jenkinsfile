@@ -25,5 +25,24 @@ pipeline {
         }
       }
     }
+    stage('Archive Binaries') {
+      parallel {
+        stage('OS X') {
+          steps {
+            archiveArtifacts 'bin/darwin_amd64/pressure'
+          }
+        }
+        stage('Linux') {
+          steps {
+            archiveArtifacts 'bin/pressure'
+          }
+        }
+        stage('Windows') {
+          steps {
+            archiveArtifacts '/bin/windows_amd64/pressure'
+          }
+        }
+      }
+    }
   }
 }
