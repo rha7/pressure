@@ -29,6 +29,9 @@ build: .GOPATH/.ok
 clean:
 	$Q rm -rf bin .GOPATH
 
+test-report: .GOPATH/.ok
+	$Q go test -v 2>&1 | go-junit-report > report.xml
+
 test: .GOPATH/.ok
 	$Q go test $(if $V,-v) -i -race $(allpackages) # install -race libs to speed up next run
 ifndef CI

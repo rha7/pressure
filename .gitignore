@@ -22,3 +22,6 @@
 /vendor/github.com/wadey/
 /vendor/golang.org/x/tools/
 /vendor/manifest
+
+# test results
+/report.xml
