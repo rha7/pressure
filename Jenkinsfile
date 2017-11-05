@@ -24,6 +24,7 @@ pipeline {
         archiveArtifacts 'bin/pressure'
         archiveArtifacts 'bin/windows_amd64/pressure.exe'
         archiveArtifacts 'report.xml'
+        junit 'report.xml'
       }
     }
   }
