@@ -39,7 +39,7 @@ pipeline {
         }
         stage('Windows') {
           steps {
-            archiveArtifacts '/bin/windows_amd64/pressure.exe'
+            archiveArtifacts 'bin/windows_amd64/pressure.exe'
           }
         }
       }
