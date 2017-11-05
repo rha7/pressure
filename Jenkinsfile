@@ -1,28 +1,23 @@
 pipeline {
   agent any
   stages {
-    stage('s1') {
+    stage('Test') {
       steps {
-        sh 'echo \'Hello World!\''
+        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test'
       }
     }
-    stage('s2') {
-      parallel {
-        stage('s2') {
-          steps {
-            echo 'Message Printing'
-          }
-        }
-        stage('s2alt') {
-          steps {
-            isUnix()
-          }
-        }
+    stage('Build') {
+      steps {
+        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" GOOS=linux GOARCH=amd64 make'
+        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" GOOS=darwin GOARCH=amd64 make'
+        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" GOOS=windows GOARCH=amd64 make'
       }
     }
-    stage('s3') {
+    stage('Archive') {
       steps {
-        mail(subject: 'Lala', body: 'Lolo', to: 'gmedina@ooyala.com')
+        archiveArtifacts 'bin/darwin_amd64/pressure'
+        archiveArtifacts 'bin/pressure'
+        archiveArtifacts 'bin/windows_amd64/pressure.exe'
       }
     }
   }
