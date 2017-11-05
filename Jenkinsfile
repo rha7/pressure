@@ -25,10 +25,5 @@ pipeline {
         }
       }
     }
-    stage('Timestamps') {
-      steps {
-        timestamps()
-      }
-    }
   }
 }
