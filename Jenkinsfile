@@ -1,9 +1,14 @@
 pipeline {
-  agent any
-  stages {
-    stage('Test') {
+    agent any
+    stages {
+    stage('Run Tests') {
       steps {
         sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test'
+      }
+    }
+    stage('Build Test Report') {
+      steps {
+        sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test-report'
       }
     }
     stage('Build') {
