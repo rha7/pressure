@@ -13,15 +13,26 @@ import (
 const textSummaryTemplate = `
 Load Test Started At: {{.Timestamp}}
 
+Spec:
+        Total Requests: {{.Spec.TotalRequests}}
+    Concurrent Threads: {{.Spec.ConcurrentThreads}}
+     Reuse Connections: {{.Spec.ReuseConnections}}
+       Request Timeout: {{.Spec.RequestTimeout}} seconds
+                Method: {{.Spec.Method}}
+                   URL: {{.Spec.URL}}
+       Request Headers: {{.Spec.RequestHeaders}}
+                 Proxy: {{.Spec.Proxy}}
+                  Data: {{.Spec.Data}}
+
 Summary:
-  Requests Count: {{.Stats.Aggregations.Count | format_stat_uint64}}
-          Errors: {{.Stats.Aggregations.Errors | format_stat_uint64}}
-      Errors (%): {{.Stats.Aggregations.ErrorsPercent | format_stat_float}} %
-      Total Time: {{.Stats.Aggregations.Total | format_stat_float}} ms
-         Slowest: {{.Stats.Aggregations.Slowest | format_stat_float}} ms
-         Fastest: {{.Stats.Aggregations.Fastest | format_stat_float}} ms
-         Average: {{.Stats.Aggregations.Average | format_stat_float}} ms
-    Requests/sec: {{.Stats.Aggregations.RequestsPerSec | format_stat_float}}
+    Requests Count: {{.Stats.Aggregations.Count | format_stat_uint64}}
+            Errors: {{.Stats.Aggregations.Errors | format_stat_uint64}}
+        Errors (%): {{.Stats.Aggregations.ErrorsPercent | format_stat_float}} %
+        Total Time: {{.Stats.Aggregations.Total | format_stat_float}} ms
+           Slowest: {{.Stats.Aggregations.Slowest | format_stat_float}} ms
+           Fastest: {{.Stats.Aggregations.Fastest | format_stat_float}} ms
+           Average: {{.Stats.Aggregations.Average | format_stat_float}} ms
+      Requests/sec: {{.Stats.Aggregations.RequestsPerSec | format_stat_float}}
 
 Return HTTP Status Codes Distribution:
 {{range $code, $count := .Stats.HTTPStatusCodeDistribution}}

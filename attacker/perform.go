@@ -34,10 +34,12 @@ func Perform(logger *logrus.Logger, spec apptypes.TestSpec) (apptypes.Summary, e
 	close(chanRequestIDProvider)
 	logger.Info("setting up request processors wait count")
 	waitGroup.Add(int(spec.ConcurrentThreads))
+	logger.Info("creating http client")
 	logger.Info("launching request processors")
 	for threadID := uint64(0); threadID < spec.ConcurrentThreads; threadID++ {
+		client := createHTTPClient(threadID, spec, logger)
 		logger.WithField("thread_id", threadID).Info("launching request processor")
-		go processor(threadID, chanRequestIDProvider, chanReportsSink, waitGroup, spec, logger)
+		go processor(threadID, chanRequestIDProvider, chanReportsSink, client, waitGroup, spec, logger)
 	}
 	waitGroup.Wait()
 	logger.Info("reading summary")

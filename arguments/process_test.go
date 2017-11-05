@@ -29,7 +29,7 @@ func TestProcess(t *testing.T) {
 				So(testSpec.Data, ShouldEqual, "")
 				So(testSpec.Method, ShouldEqual, "GET")
 				So(testSpec.RequestHeaders, ShouldHaveLength, 0)
-				So(testSpec.RequestTimeout, ShouldEqual, 30)
+				So(testSpec.RequestTimeout, ShouldEqual, 60)
 				So(testSpec.TotalRequests, ShouldEqual, 100)
 				So(testSpec.URL, ShouldEqual, testURL)
 				So(outputBuffer.String(), ShouldBeEmpty)

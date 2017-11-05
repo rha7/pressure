@@ -91,10 +91,10 @@ func calculateEventsAggregations(summary *apptypes.Summary) {
 						Fastest: math.MaxFloat64,
 					}
 			}
-			if summary.Stats.EventsAggregations[timing.Name].Slowest < timing.TimestampMilliseconds {
+			if timing.TimestampMilliseconds > summary.Stats.EventsAggregations[timing.Name].Slowest {
 				summary.Stats.EventsAggregations[timing.Name].Slowest = timing.TimestampMilliseconds
 			}
-			if summary.Stats.EventsAggregations[timing.Name].Fastest > timing.TimestampMilliseconds {
+			if timing.TimestampMilliseconds < summary.Stats.EventsAggregations[timing.Name].Fastest {
 				summary.Stats.EventsAggregations[timing.Name].Fastest = timing.TimestampMilliseconds
 			}
 			summary.Stats.EventsAggregations[timing.Name].Average += timing.TimestampMilliseconds

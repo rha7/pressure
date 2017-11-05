@@ -76,15 +76,6 @@ type SummaryStatsResponseTimesDistributionSlot struct {
 	Count uint64
 }
 
-// Latency distribution:
-//   10% in 0.3437 secs
-//   25% in 0.3479 secs
-//   50% in 0.3537 secs
-//   75% in 0.7003 secs
-//   90% in 0.7213 secs
-//   95% in 0.7292 secs
-//   99% in 1.8372 secs
-
 // SummaryResponseTimesPercentiles //
 type SummaryResponseTimesPercentiles struct {
 	Percentile10 float64

@@ -40,7 +40,51 @@ func getRequestDuration(timeStamp time.Time) float64 {
 	return float64(uint64(time.Now().UnixNano()-timeStamp.UnixNano())) / float64(1000000.0)
 }
 
-func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *logrus.Logger) apptypes.Report {
+func createHTTPClientTrace(logger *logrus.Logger, threadID uint64, requestID uint64, timings *[]apptypes.TimingEvent) *httptrace.ClientTrace {
+	return &httptrace.ClientTrace{
+		GetConn: func(hostPort string) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGetConnection)
+		},
+		GotConn: func(httptrace.GotConnInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGotConnection)
+		},
+		GotFirstResponseByte: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGotFirstResponseByte)
+		},
+		Got100Continue: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGot100Continue)
+		},
+		DNSStart: func(httptrace.DNSStartInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtDNSStart)
+		},
+		DNSDone: func(httptrace.DNSDoneInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtDNSDone)
+		},
+		ConnectStart: func(network, addr string) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtConnectStart)
+		},
+		ConnectDone: func(network, addr string, err error) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtConnectDone)
+		},
+		TLSHandshakeStart: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtTLSHandshakeStart)
+		},
+		TLSHandshakeDone: func(tls.ConnectionState, error) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtTLSHandshakeDone)
+		},
+		WroteHeaders: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtWroteHeaders)
+		},
+		Wait100Continue: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtWait100Continue)
+		},
+		WroteRequest: func(httptrace.WroteRequestInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtWroteRequest)
+		},
+	}
+}
+
+func request(threadID uint64, requestID uint64, client *http.Client, spec apptypes.TestSpec, logger *logrus.Logger) apptypes.Report {
 	timings := []apptypes.TimingEvent{}
 	bodyReader := bytes.NewBufferString(spec.Data)
 	req, err := http.NewRequest(spec.Method, spec.URL, bodyReader)
@@ -65,53 +109,11 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 		}
 		req.Header.Add(headerKey, headerValue)
 	}
-	cli := http.Client{
-		Timeout: time.Duration(spec.RequestTimeout) * time.Second,
-	}
-	// addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtRequestStarted)
-	trace := &httptrace.ClientTrace{
-		GetConn: func(hostPort string) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGetConnection)
-		},
-		GotConn: func(httptrace.GotConnInfo) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGotConnection)
-		},
-		GotFirstResponseByte: func() {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGotFirstResponseByte)
-		},
-		Got100Continue: func() {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGot100Continue)
-		},
-		DNSStart: func(httptrace.DNSStartInfo) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtDNSStart)
-		},
-		DNSDone: func(httptrace.DNSDoneInfo) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtDNSDone)
-		},
-		ConnectStart: func(network, addr string) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtConnectStart)
-		},
-		ConnectDone: func(network, addr string, err error) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtConnectDone)
-		},
-		TLSHandshakeStart: func() {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtTLSHandshakeStart)
-		},
-		TLSHandshakeDone: func(tls.ConnectionState, error) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtTLSHandshakeDone)
-		},
-		WroteHeaders: func() {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtWroteHeaders)
-		},
-		Wait100Continue: func() {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtWait100Continue)
-		},
-		WroteRequest: func(httptrace.WroteRequestInfo) {
-			addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtWroteRequest)
-		},
-	}
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-	resp, err := cli.Do(req)
+	tracers := createHTTPClientTrace(logger, threadID, requestID, &timings)
+	ctx := req.Context()
+	ctxWithTrace := httptrace.WithClientTrace(ctx, tracers)
+	req = req.WithContext(ctxWithTrace)
+	resp, err := client.Do(req)
 	if err != nil {
 		addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtRequestErrorOccurred)
 		timeStamp := rebaseEvents(&timings)

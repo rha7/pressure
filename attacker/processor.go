@@ -1,13 +1,14 @@
 package attacker
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/rha7/pressure/apptypes"
 	"github.com/sirupsen/logrus"
 )
 
-func processor(threadID uint64, chanRequestIDProvider <-chan uint64, chanResultSink chan<- apptypes.Report, wg *sync.WaitGroup, spec apptypes.TestSpec, logger *logrus.Logger) {
+func processor(threadID uint64, chanRequestIDProvider <-chan uint64, chanResultSink chan<- apptypes.Report, client *http.Client, wg *sync.WaitGroup, spec apptypes.TestSpec, logger *logrus.Logger) {
 	defer wg.Done()
 	for {
 		logger.
@@ -25,7 +26,7 @@ func processor(threadID uint64, chanRequestIDProvider <-chan uint64, chanResultS
 			WithField("thread_id", threadID).
 			WithField("request_id", requestID).
 			Info("making request")
-		result := request(threadID, requestID, spec, logger)
+		result := request(threadID, requestID, client, spec, logger)
 		logger.
 			WithField("thread_id", threadID).
 			WithField("request_id", requestID).
