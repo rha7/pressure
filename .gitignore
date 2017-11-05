@@ -17,3 +17,8 @@
 /.GOPATH
 /tmp
 /bin
+
+# make cover deps
+/vendor/github.com/wadey/
+/vendor/golang.org/x/tools/
+/vendor/manifest

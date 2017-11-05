@@ -6,13 +6,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"regexp"
 	"time"
 
 	"github.com/rha7/pressure/apptypes"
 	"github.com/sirupsen/logrus"
 )
 
-func addEvent(timings *[]apptypes.TimingEvent, name string) {
+func addEvent(logger *logrus.Logger, threadID uint64, requestID uint64, timings *[]apptypes.TimingEvent, name apptypes.ReqEvt) {
+	logger.
+		WithField("thread_id", threadID).
+		WithField("request_id", requestID).
+		WithField("event_name", name).
+		Debug("event received")
 	*timings = append(
 		*timings,
 		apptypes.TimingEvent{
@@ -30,7 +36,55 @@ func rebaseEvents(timings *[]apptypes.TimingEvent) time.Time {
 	return time.Unix(0, int64(t0))
 }
 
-func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *logrus.Logger) apptypes.Report {
+func getRequestDuration(timeStamp time.Time) float64 {
+	return float64(uint64(time.Now().UnixNano()-timeStamp.UnixNano())) / float64(1000000.0)
+}
+
+func createHTTPClientTrace(logger *logrus.Logger, threadID uint64, requestID uint64, timings *[]apptypes.TimingEvent) *httptrace.ClientTrace {
+	return &httptrace.ClientTrace{
+		GetConn: func(hostPort string) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGetConnection)
+		},
+		GotConn: func(httptrace.GotConnInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGotConnection)
+		},
+		GotFirstResponseByte: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGotFirstResponseByte)
+		},
+		Got100Continue: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtGot100Continue)
+		},
+		DNSStart: func(httptrace.DNSStartInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtDNSStart)
+		},
+		DNSDone: func(httptrace.DNSDoneInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtDNSDone)
+		},
+		ConnectStart: func(network, addr string) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtConnectStart)
+		},
+		ConnectDone: func(network, addr string, err error) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtConnectDone)
+		},
+		TLSHandshakeStart: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtTLSHandshakeStart)
+		},
+		TLSHandshakeDone: func(tls.ConnectionState, error) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtTLSHandshakeDone)
+		},
+		WroteHeaders: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtWroteHeaders)
+		},
+		Wait100Continue: func() {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtWait100Continue)
+		},
+		WroteRequest: func(httptrace.WroteRequestInfo) {
+			addEvent(logger, threadID, requestID, timings, apptypes.ReqEvtWroteRequest)
+		},
+	}
+}
+
+func request(threadID uint64, requestID uint64, client *http.Client, spec apptypes.TestSpec, logger *logrus.Logger) apptypes.Report {
 	timings := []apptypes.TimingEvent{}
 	bodyReader := bytes.NewBufferString(spec.Data)
 	req, err := http.NewRequest(spec.Method, spec.URL, bodyReader)
@@ -39,104 +93,73 @@ func request(threadID uint64, requestID uint64, spec apptypes.TestSpec, logger *
 			ThreadID:   threadID,
 			RequestID:  requestID,
 			Code:       0,
-			Response:   "",
+			Response:   "ERROR: error creating request",
 			Error:      err.Error(),
 			Outcome:    apptypes.OutcomeError,
 			Compressed: false,
 			Timings:    timings,
 		}
 	}
+	rxHdr := regexp.MustCompile("(?i)host")
 	for headerKey, headerValue := range spec.RequestHeaders {
+		if rxHdr.MatchString(headerKey) {
+			req.Host = headerValue
+			logger.WithField("host", headerValue).Info("setting request host")
+			continue
+		}
 		req.Header.Add(headerKey, headerValue)
 	}
-	cli := http.Client{
-		Timeout: time.Duration(spec.RequestTimeout) * time.Second,
-	}
-	addEvent(&timings, "request_started")
-	trace := &httptrace.ClientTrace{
-		GetConn: func(hostPort string) {
-			addEvent(&timings, "get_connection")
-		},
-		GotConn: func(httptrace.GotConnInfo) {
-			addEvent(&timings, "got_connection")
-		},
-		GotFirstResponseByte: func() {
-			addEvent(&timings, "got_first_response_byte")
-		},
-		Got100Continue: func() {
-			addEvent(&timings, "got_100_continue")
-		},
-		DNSStart: func(httptrace.DNSStartInfo) {
-			addEvent(&timings, "dns_start")
-		},
-		DNSDone: func(httptrace.DNSDoneInfo) {
-			addEvent(&timings, "dns_done")
-		},
-		ConnectStart: func(network, addr string) {
-			addEvent(&timings, "connect_start")
-		},
-		ConnectDone: func(network, addr string, err error) {
-			addEvent(&timings, "connect_done")
-		},
-		TLSHandshakeStart: func() {
-			addEvent(&timings, "tls_handshake_start")
-		},
-		TLSHandshakeDone: func(tls.ConnectionState, error) {
-			addEvent(&timings, "tls_handshake_done")
-		},
-		WroteHeaders: func() {
-			addEvent(&timings, "wrote_headers")
-		},
-		Wait100Continue: func() {
-			addEvent(&timings, "wait_100_continue")
-		},
-		WroteRequest: func(httptrace.WroteRequestInfo) {
-			addEvent(&timings, "wrote_request")
-		},
-	}
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-	resp, err := cli.Do(req)
-	addEvent(&timings, "request_completed")
-	timeStamp := rebaseEvents(&timings)
+	tracers := createHTTPClientTrace(logger, threadID, requestID, &timings)
+	ctx := req.Context()
+	ctxWithTrace := httptrace.WithClientTrace(ctx, tracers)
+	req = req.WithContext(ctxWithTrace)
+	resp, err := client.Do(req)
 	if err != nil {
+		addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtRequestErrorOccurred)
+		timeStamp := rebaseEvents(&timings)
 		return apptypes.Report{
-			ThreadID:   threadID,
-			RequestID:  requestID,
-			Code:       0,
-			Response:   "",
-			Error:      err.Error(),
-			Outcome:    apptypes.OutcomeError,
-			Compressed: !resp.Uncompressed,
-			Timings:    timings,
-			Timestamp:  timeStamp,
+			ThreadID:             threadID,
+			RequestID:            requestID,
+			Code:                 0,
+			Response:             "ERROR: error executing request",
+			Error:                err.Error(),
+			Outcome:              apptypes.OutcomeError,
+			Compressed:           false,
+			Timings:              timings,
+			Timestamp:            timeStamp,
+			DurationMilliseconds: getRequestDuration(timeStamp),
 		}
 	}
 	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	addEvent(&timings, "got_last_response_byte")
-	rebaseEvents(&timings)
 	if err != nil {
+		addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtResponseErrorOccurred)
+		timeStamp := rebaseEvents(&timings)
 		return apptypes.Report{
-			ThreadID:   threadID,
-			RequestID:  requestID,
-			Code:       uint64(resp.StatusCode),
-			Response:   string(bodyBytes),
-			Error:      err.Error(),
-			Outcome:    apptypes.OutcomeError,
-			Compressed: !resp.Uncompressed,
-			Timings:    timings,
-			Timestamp:  timeStamp,
+			ThreadID:             threadID,
+			RequestID:            requestID,
+			Code:                 uint64(resp.StatusCode),
+			Response:             "ERROR: error reading response body",
+			Error:                err.Error(),
+			Outcome:              apptypes.OutcomeError,
+			Compressed:           !resp.Uncompressed,
+			Timings:              timings,
+			Timestamp:            timeStamp,
+			DurationMilliseconds: getRequestDuration(timeStamp),
 		}
 	}
+	addEvent(logger, threadID, requestID, &timings, apptypes.ReqEvtGotLastResponseByte)
+	timeStamp := rebaseEvents(&timings)
 	return apptypes.Report{
-		ThreadID:   threadID,
-		RequestID:  requestID,
-		Code:       uint64(resp.StatusCode),
-		Response:   string(bodyBytes),
-		Error:      "",
-		Outcome:    apptypes.OutcomeSuccess,
-		Compressed: !resp.Uncompressed,
-		Timings:    timings,
-		Timestamp:  timeStamp,
+		ThreadID:             threadID,
+		RequestID:            requestID,
+		Code:                 uint64(resp.StatusCode),
+		Response:             string(bodyBytes),
+		Error:                "",
+		Outcome:              apptypes.OutcomeSuccess,
+		Compressed:           !resp.Uncompressed,
+		Timings:              timings,
+		Timestamp:            timeStamp,
+		DurationMilliseconds: getRequestDuration(timeStamp),
 	}
 }
