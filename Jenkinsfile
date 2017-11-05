@@ -1,28 +1,35 @@
 pipeline {
   agent any
   stages {
-    stage('s1') {
+    stage('Test') {
       steps {
-        sh 'echo \'Hello World!\''
+        sh 'make test'
       }
     }
-    stage('s2') {
+    stage('Build for Linux') {
       parallel {
-        stage('s2') {
+        stage('Build for Linux') {
           steps {
-            echo 'Message Printing'
+            sh '''GOOS=linux GOARCH=amd64 make
+'''
           }
         }
-        stage('s2alt') {
+        stage('Build for Mac OS X') {
           steps {
-            isUnix()
+            sh 'GOOS=darwin GOARCH=amd64 make'
+          }
+        }
+        stage('Build for Windows ') {
+          steps {
+            sh '''GOOS=windows GOARCH=amd64 make
+'''
           }
         }
       }
     }
-    stage('s3') {
+    stage('Timestamps') {
       steps {
-        mail(subject: 'Lala', body: 'Lolo', to: 'gmedina@ooyala.com')
+        timestamps()
       }
     }
   }
