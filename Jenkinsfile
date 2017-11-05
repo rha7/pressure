@@ -10,8 +10,7 @@ pipeline {
       parallel {
         stage('Build for Linux') {
           steps {
-            sh '''GOOS=linux GOARCH=amd64 make
-'''
+            sh 'GOOS=linux GOARCH=amd64 make'
           }
         }
         stage('Build for Mac OS X') {
@@ -21,8 +20,7 @@ pipeline {
         }
         stage('Build for Windows ') {
           steps {
-            sh '''GOOS=windows GOARCH=amd64 make
-'''
+            sh 'GOOS=windows GOARCH=amd64 make'
           }
         }
       }
