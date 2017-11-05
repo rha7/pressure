@@ -31,4 +31,7 @@ pipeline {
       }
     }
   }
+  environment {
+    GOROOT = '/opt/go1.8.3'
+  }
 }
