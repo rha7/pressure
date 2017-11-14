@@ -7,6 +7,12 @@ pipeline {
   }
   stages {
     stage('Run Tests') {
+      agent {
+        dockerfile {
+          filename 'Dockerfile'
+        }
+        
+      }
       steps {
         sh 'GOROOT="/opt/go" PATH="/opt/go/bin:$PATH" make test'
       }
